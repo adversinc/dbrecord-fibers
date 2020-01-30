@@ -1,0 +1,18 @@
+{
+	"sourceMaps": "inline",
+
+	"presets": [
+		[
+			"@babel/preset-env",
+			{
+				"targets": {
+					"node": "10"
+				}
+			}
+		]
+	],
+
+	"plugins": [
+		"add-module-exports"
+	]
+}
