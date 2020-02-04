@@ -7,7 +7,7 @@ const suite = new Benchmark.Suite;
 
 // libs
 const MysqlDatabase = require("../lib/MysqlDatabase");
-const TestRecord = require('../test/classes/TestRecord');
+const TestRecord = require('dbrecord-fibers/test/classes/TestRecord');
 const TestRecord2 = require('./classes/TestRecord2');
 
 

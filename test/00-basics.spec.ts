@@ -1,11 +1,14 @@
+const TestRecord = require("./classes/TestRecord").default;
+
 process.env["NODE_CONFIG_DIR"] = __dirname + "/config/";
 const
 	assert = require('assert'),
 	config = require("config");
 
+import "mocha";
+
 // Libs to test
 const MysqlDatabase = require("../lib/MysqlDatabase");
-const TestRecord = require('./classes/TestRecord');
 
 // Tests
 describe('DbRecord basic ops', function() {
@@ -32,7 +35,7 @@ describe('DbRecord basic ops', function() {
 		obj.commit();
 
 		// Checks
-		const TABLE_NAME  = obj._tableName;
+		const TABLE_NAME  = TestRecord._table();
 		const row = dbh.querySync(`SELECT * FROM ${TABLE_NAME}`);
 		assert.deepEqual(row, [ {
 			id: 1,
@@ -109,7 +112,7 @@ describe('DbRecord basic ops', function() {
 	//
 	//
 	it('should fail on unexistent row', function() {
-		let error = {};
+		let error: Error;
 		try {
 			let obj = new TestRecord({id: 1});
 			console.log("obj:", obj);
@@ -152,7 +155,7 @@ describe('DbRecord basic ops', function() {
 		dbh.querySync(`INSERT INTO dbrecord_test SET name=?, field2=?`, [this.test.fullTitle(), 200]);
 		dbh.querySync(`INSERT INTO dbrecord_test SET name=?, field2=?`, [ Math.random(), 300 ]);
 
-		let error = {};
+		let error: Error;
 		try {
 			let obj = new TestRecord({ field2: 10000 });
 		} catch(ex) {
@@ -198,7 +201,7 @@ describe('DbRecord basic ops', function() {
 		dbh.querySync(`INSERT INTO dbrecord_test SET name=?, field2=?, field3=?`,
 			[ Math.random(), 300, "Fourth" ]);
 
-		let error = {};
+		let error: Error;
 		try {
 			let obj = new TestRecord({ field2: 200, field3: "One hundreds" });
 		} catch(ex) {

@@ -13,7 +13,7 @@ const time = require("./helpers/time");
 
 // Libs to test
 const MysqlDatabase = require("../lib/MysqlDatabase");
-const TestRecord = require('./classes/TestRecord');
+const TestRecord = require('dbrecord-fibers/test/classes/TestRecord');
 
 // Tests
 describe('DbRecord transactions, single thread', function() {

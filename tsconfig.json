@@ -1,12 +1,15 @@
 {
 	"compilerOptions": {
-		//"sourceMap": true,
+		"sourceMap": true,
 		"allowJs": true,
 		"esModuleInterop": true,
 		"moduleResolution": "Node",
 		"module": "commonjs",
 		"target": "ES2018",
 		"declaration": true,
+		"preserveSymlinks": true,
+
+		"typeRoots" : ["./node_modules/@types", "./typings"],
 
 		"baseUrl": "./",
 		"paths" : {

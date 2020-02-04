@@ -6,7 +6,7 @@ const
 
 // Libs to test
 const MysqlDatabase = require("../lib/MysqlDatabase");
-const TestRecord = require('./classes/TestRecord');
+const TestRecord = require('dbrecord-fibers/test/classes/TestRecord');
 
 const TABLE_NAME = "dbrecord_test";
 

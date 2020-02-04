@@ -20,16 +20,16 @@ class DbRecordFibers {
 	/**
 	 * @inheritdoc
 	 */
-	constructor(options: DbRecord2.DbRecordOptions = {}) {
+	constructor(options?: DbRecord2.ObjectInitializer) {
 		const future = new Future();
 
+		// Create dbrecord holder and adjust its properties
 		this.dbrecord = new DbRecord2(options);
-		this.dbrecord._tableName
+		this.dbrecord._tableName = (this.constructor as any)._table();
+		this.dbrecord._locateField = (this.constructor as any)._locatefield();
+		this.dbrecord._keysList = (this.constructor as any)._keys();
 
-		this.dbrecord.init()
-			.then(res => future.return(res))
-			.catch(err => { future.throw(err) });
-		return future.wait();
+		return Future.fromPromise(this.dbrecord.init());
 	}
 
 	/**
@@ -37,7 +37,7 @@ class DbRecordFibers {
 	 * not throw an error for non-existing record and returns null instead.
 	 * @param options
 	 */
-	static tryCreate(options: DbRecord2.DbRecordOptions = {}) {
+	static tryCreate<T extends DbRecordFibers>(this: { new({}): T }, options: DbRecord2.ObjectInitializer = {}): T {
 		try {
 			return new this(options);
 		} catch(ex) {
@@ -95,111 +95,48 @@ class DbRecordFibers {
 	 */
 	static forEach(options: DbRecord2.ForEachOptions, cb: ForeachCallback) {
 		const asyncCb = async (item: DbRecord2, options: DbRecord2.ForEachOptions) => {
-			const o = {};
-			o[this._locatefield()] = row[this._locatefield()];
+			const init: DbRecord2.ObjectInitializer = {};
+			init[this._locatefield()] = options.raw[this._locatefield()];
 
-			const obj = new
+			const obj = new this(init);
+			cb(obj, options);
 		};
 
 		const opts = Object.assign({}, options);
 		opts.noObjectCreate = true;
 		opts.provideRaw = true;
-		DbRecord2.forEach(opts, asyncCb);
 
-		const where = [];
-		const qparam = [];
-		const sql = DbRecord2._prepareForEach(options, where, qparam);
-
-		//
-		// Iterate
-		const _dbh =  this._getDbhClassStatic().masterDbh();
-
-		/*
-		if(TARGET === "development") {
-			console.log(`${_dbh._db.threadId}: will be running forEach query`);
-		}
-		*/
-
-		const rows = _dbh.querySync(sql, qparam);
-		options.TOTAL = rows.length;
-
-		if(cb) {
-			options.COUNTER = 0;
-
-			for(const row of rows) {
-				options.COUNTER++;
-
-				const o = {};
-				o[this._locatefield()] = row[this._locatefield()];
-				const obj = new this(o);
-
-				// Wait for iterator to end
-				cb(obj, options);
-			}
-		} else {
-			options.COUNTER = options.TOTAL;
-		}
-
-		return options.COUNTER;
-	}
-
-	// Helper functions
-
-	/**
-	 * Add value to mysql SET field
-	 * @param currentValue
-	 * @param newValue
-	 */
-	static setFieldSet(currentValue, newValue) {
-		const parts = (typeof(currentValue) === "string" && currentValue !== "")?
-			currentValue.split(","):
-			[];
-		parts.push(newValue);
-		return parts.join(",");
-	}
-
-	/**
-	 * Remove value from mysql SET field
-	 * @param currentValue
-	 * @param toRemove
-	 */
-	static setFieldRemove(currentValue, toRemove) {
-		let parts = (typeof(currentValue) === "string")? currentValue.split(","): [];
-		parts = parts.filter(v => v !== toRemove);
-		return parts.join(",");
-	}
-
-	/**
-	 * Check if value in in mysql SET field
-	 * @param currentValue
-	 * @param toRemove
-	 */
-	static setFieldCheck(currentValue, check) {
-		const parts = (typeof(currentValue) === "string")? currentValue.split(","): [];
-		return parts.includes(check);
+		Future.fromPromise(
+			DbRecord2.forEach(opts, asyncCb)
+		).wait();
 	}
 
 	/**
 	 * @inheritdoc
 	 */
 	transactionWithMe(cb: TransactionCallback): void {
-		const Class = this.constructor;
+		const Class = (this.dbrecord.constructor as any);
 
-		const dbh = Class.masterDbh();
-		dbh.execTransaction(() => {
-			const params = {};
-			params[this._locateField] = this[this._locateField]();
-			const me = new (this.constructor as any)(params);
+		const p = this.dbrecord.transactionWithMe(async (dbrecord2: DbRecord2 ) => {
+			const init: DbRecord2.ObjectInitializer = {};
+			const loc: string = (Class as any)._locatefield();
+			init[loc] = dbrecord2[loc]();
 
+			// TODO: fix unnecessary dbrecord2 creation above
+			const me = new (Class as any)(init);
 			return cb(me);
 		});
 
 		// Re-read our object after the transaction
-		Future.fromPromise(
-			this._read(this[this._locateField]())
-		).wait();
+		Future.fromPromise(p).wait();
 	}
+}
 
+namespace DbRecordFibers {
+	export import ObjectInitializer = DbRecord2.ObjectInitializer;
+	export import ForEachOptions = DbRecord2.ForEachOptions;
+
+	export import Column = DbRecord2.Column;
 }
 
 export = DbRecordFibers;
